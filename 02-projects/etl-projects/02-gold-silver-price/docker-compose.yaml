@@ -1,0 +1,77 @@
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.0
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__CORE__FERNET_KEY=l9auRj5q6-93KRX6PeTCJcfMIMv3F0hpWwknQ82O_8k=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres/${DATABASE_NAME}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./src:/opt/airflow/src
+  user: "${AIRFLOW_UID:-1000}:0"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      retries: 10
+
+  airflow-init:
+    <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: bash -c "
+        echo '⏳ Waiting for Postgres...';
+        sleep 5;
+        airflow db init &&
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+      "
+
+  webserver:
+    <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: bash -c "
+        echo '🧹 Cleaning old PID...';
+        rm -f /opt/airflow/airflow-webserver.pid &&
+        echo '🚀 Starting Airflow Webserver...';
+        airflow webserver
+      "
+    ports:
+      - "8080:8080"
+
+  scheduler:
+    <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: bash -c "
+        echo '📅 Starting Airflow Scheduler...';
+        airflow scheduler
+      "
+
+volumes:
+  postgres_data:

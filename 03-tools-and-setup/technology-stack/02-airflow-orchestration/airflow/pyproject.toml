@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "airflow-test"
+version = "0.1.0"
+description = "Local test environment for Airflow DAGs"
+authors = ["Sanjukin Pinem <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+apache-airflow = "2.9.0"
+requests = "^2.32.3"  # contoh, buat DAG yang fetch API
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

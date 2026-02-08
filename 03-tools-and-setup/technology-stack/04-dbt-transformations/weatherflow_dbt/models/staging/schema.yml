@@ -1,0 +1,34 @@
+sources:
+  - name: dbt_weather_sanju
+    description: "raw weather data from bigquery"
+    database: weather-cloud-lab
+    schema: dbt_weather_sanju
+    tables: 
+      - name: weather_daily 
+        description: "Daily weather data"
+        loaded_at_field: updated_at   # kolom timestamp kapan data terakhir diupdate
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 3, period: day}
+        columns: 
+          - name: city
+            description: "City name"
+            tests:
+              - not_null
+          - name: humidity
+            description: "Humidity"
+            tests:
+              - not_null
+              - humidity_in_range:
+                  severity: warn
+
+models:
+  - name: stg_weather
+    description: "Cleaned and standardized weather data"
+    columns: 
+      - name: city_name
+        description: "City name from source table"
+      - name: temperature_c
+        description: "Temperature in Celsius"
+      - name: humidity
+        description: "Humidity percentage"

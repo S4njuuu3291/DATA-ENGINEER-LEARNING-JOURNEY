@@ -1,0 +1,25 @@
+Bertanya seputar Windowing dalam Spark Streaming?
+
+1. Apakah Session Window itu technically 1 sesi window untuk 1 user?
+- Ya, Session Window adalah jenis windowing yang mengelompokkan data berdasarkan aktivitas pengguna. Setiap sesi window dimulai ketika ada aktivitas dari pengguna dan berakhir setelah periode tertentu tanpa aktivitas (inactivity gap). Jadi, untuk setiap user, akan ada satu sesi window yang mencakup semua aktivitas mereka selama periode tersebut.
+
+2. Terkait pertanyaan 1, bukankah sangat berat jika ada jutaan user yang masing-masing memiliki session window sendiri?
+- Ya, benar. Mengelola session window untuk jutaan pengguna bisa menjadi sangat berat dan memerlukan sumber daya yang signifikan. Namun, Spark Streaming dirancang untuk menangani skala besar dan memiliki mekanisme optimasi untuk mengelola state dan memori dengan efisien. Selain itu, pengguna juga dapat mengatur parameter seperti timeout sesi untuk mengurangi beban.
+
+3. Dalam Windowing, ada yang namanya Watermarking. Apakah jika Window size = 1 jam, dengan Watermark 10 menit, secara teknis data dalam satu Window itu adalah data dalam rentang 1 jam 10 menit?
+- Tidak. Watermarking digunakan untuk menentukan batas waktu keterlambatan data yang masih akan diproses. Jika Window size adalah 1 jam dan Watermark adalah 10 menit, maka data yang tiba dalam waktu 10 menit setelah akhir window masih akan diproses dalam window tersebut. Jadi, data yang masuk dalam window tersebut tetap hanya data yang berada dalam rentang 1 jam, tetapi dengan toleransi keterlambatan hingga 10 menit.
+
+4. Koreksi jika salah: Sliding window = window yang overlap, Tumbling window = window yang tidak overlap, Session window = window berdasarkan sesi user, kalau window yang ada gap waktu tertentu itu namanya apa ya?
+- Window yang memiliki gap waktu tertentu biasanya disebut sebagai "Hopping Window". Hopping Window memungkinkan window untuk bergerak maju dengan interval tertentu, sehingga ada overlap antara window-window tersebut. Misalnya, jika Anda memiliki window size 1 jam dan hop interval 30 menit, maka setiap window akan terdapat overlap selama 30 menit dengan window sebelumnya dan berikutnya.
+
+5. Contoh kasus konkrit Tumbling Windowing, mana yang terlalu kecil, terlalu besar, dan pas?
+- Contoh kasus konkrit untuk Tumbling Windowing bisa ditemukan dalam analisis data sensor suhu. Misalnya, jika Anda ingin mengukur rata-rata suhu setiap 5 menit, maka window size 5 menit adalah ukuran yang pas. Jika Anda menggunakan window size 1 menit, itu mungkin terlalu kecil karena fluktuasi suhu yang cepat dapat menghasilkan data yang kurang stabil. Sebaliknya, jika Anda menggunakan window size 1 jam, itu mungkin terlalu besar karena Anda akan kehilangan detail perubahan suhu yang terjadi dalam periode waktu yang lebih pendek. Jadi, ukuran window harus disesuaikan dengan kebutuhan analisis dan karakteristik data yang sedang diproses.
+
+6. Apa definisi dari latency dalam konteks Spark Streaming?
+- Latency dalam konteks Spark Streaming merujuk pada waktu yang dibutuhkan untuk memproses data dari saat data tersebut diterima hingga hasil akhirnya tersedia. Latency mencakup waktu yang dihabiskan dalam berbagai tahap pemrosesan, termasuk pengambilan data, transformasi, dan output. Latency yang rendah sangat penting dalam aplikasi real-time untuk memastikan bahwa informasi yang dihasilkan relevan dan dapat digunakan segera setelah data diterima.
+
+7. Tradeoff dalam kasus ukuran window itu tentang apa?
+- Tradeoff dalam kasus ukuran window berkaitan dengan keseimbangan antara akurasi hasil analisis dan efisiensi pemrosesan. Ukuran window yang lebih kecil dapat memberikan hasil yang lebih akurat dan responsif terhadap perubahan data, tetapi dapat meningkatkan beban pemrosesan dan latency. Sebaliknya, ukuran window yang lebih besar dapat mengurangi beban pemrosesan dan latency, tetapi mungkin mengorbankan akurasi dan detail informasi. Oleh karena itu, pemilihan ukuran window harus mempertimbangkan kebutuhan aplikasi, karakteristik data, dan sumber daya yang tersedia.
+
+8. Dalam kasus Tumbling Window, misal Window size 1 jam, apakah Window A ini rentang nya 09.00 - 09.59.59?
+- Ya, dalam kasus Tumbling Window dengan ukuran window 1 jam, Window A akan mencakup rentang waktu dari 09.00 hingga 09.59.59. Setelah itu, window berikutnya (Window B) akan dimulai pada 10.00 dan berakhir pada 10.59.59, dan seterusnya. Tumbling Window tidak memiliki overlap, sehingga setiap window adalah periode waktu yang terpisah dan berurutan.

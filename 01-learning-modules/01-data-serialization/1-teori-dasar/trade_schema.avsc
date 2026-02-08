@@ -1,0 +1,20 @@
+{
+    "type": "record",
+    "name": "CryptoTrade",
+    "namespace": "com.sanju.crypto",
+    "fields":[
+        {
+            "name": "symbol",
+            "type": "string"
+        },
+        {
+            "name": "price",
+            "type": "double"
+        },
+        {
+            "name": "event_time",
+            "type": "long",
+            "logicalType": "timestamp-millis"
+        }
+    ]
+}

@@ -1,0 +1,486 @@
+"""
+TESTING FULL ETL PIPELINE
+
+Real-world scenario: Complete ETL pipeline test.
+
+Scenario: Cryptocurrency Price Tracker
+1. Extract: Fetch crypto prices dari mock API
+2. Transform: Normalize, add calculations
+3. Load: Save ke mock database
+4. Verify: End-to-end data integrity
+
+Cara run:
+    pytest 3-test-etl-pipeline.py -v
+"""
+
+import sqlite3
+from datetime import datetime
+from unittest.mock import Mock, patch
+from dataclasses import dataclass
+
+import pandas as pd
+import pytest
+
+
+# ==========================================
+# DOMAIN MODELS
+# ==========================================
+
+
+@dataclass
+class CryptoPrice:
+    """Cryptocurrency price data."""
+    symbol: str
+    price: float
+    timestamp: datetime
+    
+    def to_dict(self):
+        return {
+            "symbol": self.symbol,
+            "price": self.price,
+            "timestamp": self.timestamp.isoformat()
+        }
+
+
+# ==========================================
+# PIPELINE FUNCTIONS
+# ==========================================
+
+
+def extract_crypto_prices_from_api(symbols: list) -> list:
+    """
+    Extract: Fetch prices dari external API.
+    
+    Returns list of raw price data.
+    """
+    import requests
+    
+    prices = []
+    for symbol in symbols:
+        response = requests.get(f"https://api.coingecko.com/prices/{symbol}")
+        response.raise_for_status()
+        
+        data = response.json()
+        prices.append({
+            "symbol": symbol,
+            "price": data["price"],
+            "timestamp_ms": data["timestamp"]
+        })
+    
+    return prices
+
+
+def transform_crypto_prices(raw_prices: list) -> list:
+    """
+    Transform: Clean & normalize data.
+    
+    - Convert timestamp
+    - Validate prices
+    - Add calculations
+    """
+    transformed = []
+    
+    for price_data in raw_prices:
+        # Validate
+        if price_data["price"] <= 0:
+            raise ValueError(f"Invalid price: {price_data['price']}")
+        
+        # Convert timestamp
+        timestamp = datetime.fromtimestamp(price_data["timestamp_ms"] / 1000)
+        
+        # Create object
+        crypto = CryptoPrice(
+            symbol=price_data["symbol"].upper(),
+            price=price_data["price"],
+            timestamp=timestamp
+        )
+        
+        transformed.append(crypto)
+    
+    return transformed
+
+
+def load_crypto_prices_to_db(db_connection, prices: list) -> int:
+    """
+    Load: Insert ke database.
+    
+    Returns count of loaded records.
+    """
+    cursor = db_connection.cursor()
+    loaded = 0
+    
+    for price in prices:
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO crypto_prices 
+            (symbol, price, timestamp) VALUES (?, ?, ?)
+            """,
+            (price.symbol, price.price, price.timestamp.isoformat())
+        )
+        loaded += 1
+    
+    db_connection.commit()
+    return loaded
+
+
+def verify_data_integrity(db_connection, expected_symbols: list) -> dict:
+    """
+    Verify: Check data integrity.
+    
+    Returns summary of checks.
+    """
+    cursor = db_connection.cursor()
+    
+    checks = {
+        "total_records": 0,
+        "symbols_found": [],
+        "all_symbols_present": False,
+        "prices_valid": True
+    }
+    
+    # Count records
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices")
+    checks["total_records"] = cursor.fetchone()[0]
+    
+    # Check symbols
+    cursor.execute("SELECT DISTINCT symbol FROM crypto_prices")
+    checks["symbols_found"] = [row[0] for row in cursor.fetchall()]
+    checks["all_symbols_present"] = set(checks["symbols_found"]) == set(expected_symbols)
+    
+    # Check prices validity
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices WHERE price <= 0")
+    invalid_prices = cursor.fetchone()[0]
+    checks["prices_valid"] = invalid_prices == 0
+    
+    return checks
+
+
+# ==========================================
+# FIXTURES
+# ==========================================
+
+
+@pytest.fixture
+def crypto_db():
+    """Setup test database untuk crypto prices."""
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    
+    # Create schema
+    cursor.execute('''
+        CREATE TABLE crypto_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            price REAL NOT NULL,
+            timestamp TEXT NOT NULL,
+            UNIQUE(symbol, timestamp)
+        )
+    ''')
+    conn.commit()
+    
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
+def mock_api_prices():
+    """Mock API response untuk crypto prices."""
+    return {
+        "BTC": {
+            "price": 50000.0,
+            "timestamp": 1705334400000  # 2024-01-15 12:00:00 UTC
+        },
+        "ETH": {
+            "price": 3000.0,
+            "timestamp": 1705334400000
+        },
+        "SOL": {
+            "price": 150.0,
+            "timestamp": 1705334400000
+        }
+    }
+
+
+# ==========================================
+# TESTS - Individual Pipeline Stages
+# ==========================================
+
+
+@patch('requests.get')
+def test_extract_single_price(mock_get, mock_api_prices):
+    """Test extract: fetch single crypto price."""
+    # Setup
+    mock_response = Mock()
+    mock_response.json.return_value = mock_api_prices["BTC"]
+    mock_response.raise_for_status.return_value = None
+    mock_get.return_value = mock_response
+    
+    # Execute
+    prices = extract_crypto_prices_from_api(["BTC"])
+    
+    # Verify
+    assert len(prices) == 1
+    assert prices[0]["symbol"] == "BTC"
+    assert prices[0]["price"] == 50000.0
+
+
+@patch('requests.get')
+def test_extract_multiple_prices(mock_get, mock_api_prices):
+    """Test extract: fetch multiple crypto prices."""
+    # Setup: Return different responses per symbol
+    responses = [
+        Mock(json=lambda: mock_api_prices["BTC"], raise_for_status=lambda: None),
+        Mock(json=lambda: mock_api_prices["ETH"], raise_for_status=lambda: None),
+        Mock(json=lambda: mock_api_prices["SOL"], raise_for_status=lambda: None),
+    ]
+    mock_get.side_effect = responses
+    
+    # Execute
+    prices = extract_crypto_prices_from_api(["BTC", "ETH", "SOL"])
+    
+    # Verify
+    assert len(prices) == 3
+    assert mock_get.call_count == 3
+
+
+@patch('requests.get')
+def test_extract_api_error(mock_get):
+    """Test extract: handle API error."""
+    # Setup error
+    mock_response = Mock()
+    mock_response.raise_for_status.side_effect = Exception("API Error")
+    mock_get.return_value = mock_response
+    
+    # Verify error is raised
+    with pytest.raises(Exception):
+        extract_crypto_prices_from_api(["BTC"])
+
+
+def test_transform_prices(mock_api_prices):
+    """Test transform: normalize data."""
+    # Raw data dari mock API
+    raw_prices = [
+        {
+            "symbol": "btc",
+            "price": mock_api_prices["BTC"]["price"],
+            "timestamp_ms": mock_api_prices["BTC"]["timestamp"]
+        }
+    ]
+    
+    # Transform
+    transformed = transform_crypto_prices(raw_prices)
+    
+    # Verify
+    assert len(transformed) == 1
+    assert transformed[0].symbol == "BTC"  # Uppercase!
+    assert transformed[0].price == 50000.0
+    assert isinstance(transformed[0].timestamp, datetime)
+
+
+def test_transform_invalid_price():
+    """Test transform: reject invalid prices."""
+    raw_prices = [
+        {
+            "symbol": "btc",
+            "price": -100.0,  # Invalid!
+            "timestamp_ms": 1705334400000
+        }
+    ]
+    
+    with pytest.raises(ValueError, match="Invalid price"):
+        transform_crypto_prices(raw_prices)
+
+
+def test_load_prices_to_database(crypto_db):
+    """Test load: insert to database."""
+    prices = [
+        CryptoPrice("BTC", 50000.0, datetime(2024, 1, 15, 12, 0, 0)),
+        CryptoPrice("ETH", 3000.0, datetime(2024, 1, 15, 12, 0, 0)),
+    ]
+    
+    count = load_crypto_prices_to_db(crypto_db, prices)
+    
+    # Verify count
+    assert count == 2
+    
+    # Verify data in database
+    cursor = crypto_db.cursor()
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices")
+    assert cursor.fetchone()[0] == 2
+
+
+def test_load_duplicate_handling(crypto_db):
+    """Test load: handle duplicates (UPSERT)."""
+    price1 = CryptoPrice("BTC", 50000.0, datetime(2024, 1, 15, 12, 0, 0))
+    price2 = CryptoPrice("BTC", 51000.0, datetime(2024, 1, 15, 12, 0, 0))  # Same timestamp
+    
+    # Load first price
+    load_crypto_prices_to_db(crypto_db, [price1])
+    
+    # Load duplicate (should update)
+    load_crypto_prices_to_db(crypto_db, [price2])
+    
+    # Verify: only 1 record, updated price
+    cursor = crypto_db.cursor()
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices")
+    assert cursor.fetchone()[0] == 1
+    
+    cursor.execute("SELECT price FROM crypto_prices WHERE symbol = 'BTC'")
+    price = cursor.fetchone()[0]
+    assert price == 51000.0  # Updated!
+
+
+def test_verify_data_integrity(crypto_db):
+    """Test verify: check data integrity."""
+    prices = [
+        CryptoPrice("BTC", 50000.0, datetime(2024, 1, 15, 12, 0, 0)),
+        CryptoPrice("ETH", 3000.0, datetime(2024, 1, 15, 12, 0, 0)),
+        CryptoPrice("SOL", 150.0, datetime(2024, 1, 15, 12, 0, 0)),
+    ]
+    
+    load_crypto_prices_to_db(crypto_db, prices)
+    
+    # Verify
+    checks = verify_data_integrity(crypto_db, ["BTC", "ETH", "SOL"])
+    
+    assert checks["total_records"] == 3
+    assert checks["all_symbols_present"] is True
+    assert checks["prices_valid"] is True
+
+
+# ==========================================
+# TESTS - Full Pipeline Integration
+# ==========================================
+
+
+@patch('requests.get')
+def test_full_etl_pipeline(mock_get, crypto_db, mock_api_prices):
+    """
+    Integration test: Full ETL pipeline end-to-end.
+    
+    Extract → Transform → Load → Verify
+    """
+    # Setup mocks
+    symbols = ["BTC", "ETH", "SOL"]
+    responses = [
+        Mock(json=lambda s=s: mock_api_prices[s], raise_for_status=lambda: None)
+        for s in symbols
+    ]
+    mock_get.side_effect = responses
+    
+    # Stage 1: Extract
+    raw_prices = extract_crypto_prices_from_api(symbols)
+    assert len(raw_prices) == 3
+    
+    # Stage 2: Transform
+    transformed_prices = transform_crypto_prices(raw_prices)
+    assert len(transformed_prices) == 3
+    assert all(isinstance(p.timestamp, datetime) for p in transformed_prices)
+    
+    # Stage 3: Load
+    count = load_crypto_prices_to_db(crypto_db, transformed_prices)
+    assert count == 3
+    
+    # Stage 4: Verify
+    checks = verify_data_integrity(crypto_db, symbols)
+    assert checks["total_records"] == 3
+    assert checks["all_symbols_present"] is True
+    assert checks["prices_valid"] is True
+
+
+@patch('requests.get')
+def test_full_etl_with_failure_recovery(mock_get, crypto_db, mock_api_prices):
+    """
+    Integration test: Full ETL dengan partial failure & recovery.
+    
+    Scenario:
+    1. Fetch BTC - success
+    2. Fetch ETH - fails (timeout)
+    3. Retry ETH - success
+    4. Fetch SOL - success
+    5. Load all 3
+    """
+    # Setup: ETH fails first, then succeeds
+    eth_fail = Mock()
+    eth_fail.raise_for_status.side_effect = Exception("Timeout")
+    
+    eth_success = Mock(json=lambda: mock_api_prices["ETH"], raise_for_status=lambda: None)
+    
+    responses = [
+        Mock(json=lambda: mock_api_prices["BTC"], raise_for_status=lambda: None),  # BTC
+        eth_fail,  # ETH fail
+        eth_success,  # ETH retry
+        Mock(json=lambda: mock_api_prices["SOL"], raise_for_status=lambda: None),  # SOL
+    ]
+    mock_get.side_effect = responses
+    
+    # Extract with retry simulation
+    raw_prices = []
+    symbols_to_fetch = ["BTC", "ETH", "SOL"]
+    
+    for symbol in symbols_to_fetch:
+        for attempt in range(2):  # Retry once
+            try:
+                raw_prices.extend(extract_crypto_prices_from_api([symbol]))
+                break
+            except Exception as e:
+                if attempt == 1:
+                    raise
+    
+    # Transform & Load
+    transformed = transform_crypto_prices(raw_prices)
+    count = load_crypto_prices_to_db(crypto_db, transformed)
+    
+    # Verify all loaded despite retry
+    assert count == 3
+    
+    checks = verify_data_integrity(crypto_db, symbols_to_fetch)
+    assert checks["all_symbols_present"] is True
+
+
+# ==========================================
+# REAL-WORLD PATTERNS
+# ==========================================
+
+
+def test_idempotent_load():
+    """
+    Test idempotency: Running pipeline twice = same result.
+    
+    Important untuk production: Dapat di-retry tanpa duplicate data.
+    """
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE crypto_prices (
+            symbol TEXT PRIMARY KEY,
+            price REAL,
+            timestamp TEXT
+        )
+    ''')
+    conn.commit()
+    
+    prices = [CryptoPrice("BTC", 50000.0, datetime(2024, 1, 15, 12, 0, 0))]
+    
+    # Run 1
+    load_crypto_prices_to_db(conn, prices)
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices")
+    count_1 = cursor.fetchone()[0]
+    
+    # Run 2 (same data)
+    load_crypto_prices_to_db(conn, prices)
+    cursor.execute("SELECT COUNT(*) FROM crypto_prices")
+    count_2 = cursor.fetchone()[0]
+    
+    # Should be same (idempotent)
+    assert count_1 == count_2
+
+
+if __name__ == "__main__":
+    print("❌ Don't run with python!")
+    print("✅ Run dengan: pytest 3-test-etl-pipeline.py -v")
+    print("\n💡 Key patterns:")
+    print("   - Full pipeline test: Extract → Transform → Load → Verify")
+    print("   - Mocking multiple API calls")
+    print("   - Handling partial failures")
+    print("   - Idempotency testing")

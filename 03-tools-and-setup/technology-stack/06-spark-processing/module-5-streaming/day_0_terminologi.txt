@@ -1,0 +1,45 @@
+All about terminologi dalam bahasa sederhana
+
+1. Apa itu Backpressure?
+-> Backpressure adalah mekanisme yang digunakan dalam sistem pemrosesan data untuk mengontrol aliran data agar tidak melebihi kapasitas pemrosesan sistem. Ini membantu mencegah overload dan memastikan bahwa sistem dapat menangani data dengan efisien.
+
+2. Apa itu OOM (Out Of Memory)?
+-> OOM atau Out Of Memory adalah kondisi di mana sebuah program atau sistem kehabisan memori yang tersedia untuk menjalankan prosesnya. Ini biasanya terjadi ketika aplikasi mencoba menggunakan lebih banyak memori daripada yang dialokasikan atau tersedia di sistem.
+
+3. Apa itu Idempotent?
+-> Idempotent adalah sifat dari suatu operasi di mana melakukan operasi tersebut berkali-kali menghasilkan hasil yang sama seperti melakukan operasi tersebut sekali saja. Dalam konteks pemrosesan data, ini berarti bahwa jika data yang sama diproses ulang, hasilnya tidak akan berubah.
+
+4. Apa itu Exactly Once Semantics dan At Least Once Semantics?
+-> Exactly Once Semantics adalah jaminan bahwa setiap data akan diproses tepat satu kali, tanpa duplikasi atau kehilangan. Sedangkan At Least Once Semantics menjamin bahwa setiap data akan diproses setidaknya satu kali, yang berarti ada kemungkinan data yang sama diproses lebih dari sekali.
+
+5. Apa itu Checkpointing?
+-> Checkpointing adalah proses menyimpan status atau kondisi dari sebuah sistem pada titik tertentu sehingga jika terjadi kegagalan, sistem dapat dipulihkan ke kondisi tersebut tanpa kehilangan data atau kemajuan yang telah dicapai sebelumnya.
+
+6. Apa itu Throughput?
+-> Throughput adalah ukuran seberapa banyak data yang dapat diproses oleh sistem dalam jangka waktu tertentu. Ini biasanya diukur dalam satuan data per detik (misalnya, megabyte per detik) dan mencerminkan kinerja sistem dalam menangani beban kerja.
+
+7. Apa itu Backlog?
+-> Backlog adalah jumlah pekerjaan atau data yang menunggu untuk diproses oleh sistem. Ini bisa terjadi ketika sistem tidak dapat menangani aliran data yang masuk dengan cepat, sehingga data menumpuk dan menunggu giliran untuk diproses.
+
+8. Apa itu Lambda Architecture dan contoh?
+-> Lambda Architecture adalah sebuah arsitektur sistem pemrosesan data yang menggabungkan dua pendekatan utama: batch processing dan stream processing. Tujuannya adalah untuk menyediakan hasil yang cepat dan akurat dengan memanfaatkan kelebihan dari kedua metode tersebut. Contohnya adalah sistem yang menggunakan Apache Hadoop untuk pemrosesan batch dan Apache Spark Streaming untuk pemrosesan data real-time.
+
+9. Apa itu Append Mode, Complete Mode, dan Update Mode, poin per poin?
+-> Append Mode: Dalam mode ini, hanya data baru yang ditambahkan ke output. Data yang sudah ada tidak diubah atau dihapus.
+-> Complete Mode: Dalam mode ini, seluruh hasil output diperbarui setiap kali ada perubahan, sehingga output selalu mencerminkan keadaan terbaru dari data yang diproses.
+-> Update Mode: Dalam mode ini, hanya bagian dari output yang berubah yang diperbarui, sementara bagian lain tetap sama. Ini memungkinkan efisiensi dalam memperbarui output tanpa harus menulis ulang seluruh data.
+
+10. Apa itu Buffer Layer?
+-> Buffer Layer adalah lapisan dalam arsitektur sistem yang berfungsi sebagai penyangga antara sumber data dan sistem pemrosesan. Ini membantu mengelola aliran data, menyimpan sementara data yang masuk, dan memastikan bahwa data dapat diproses dengan lancar tanpa kehilangan informasi.
+
+11. Apa itu Overload?
+-> Overload adalah kondisi di mana sistem menerima lebih banyak beban kerja atau data daripada yang dapat ditangani secara efisien. Ini dapat menyebabkan penurunan kinerja, keterlambatan dalam pemrosesan, atau bahkan kegagalan sistem.
+
+12. Apa itu Downstream dan Upstream?
+-> Downstream adalah arah aliran data dari sumber ke tujuan akhir dalam sebuah sistem pemrosesan. Sedangkan Upstream adalah arah aliran data dari tujuan akhir kembali ke sumber atau ke tahap sebelumnya dalam proses. Dalam konteks pemrosesan data, downstream biasanya merujuk pada tahap di mana data diproses atau dikonsumsi, sementara upstream merujuk pada tahap di mana data dihasilkan atau dikirimkan.
+
+13. Apa itu Change Data Capture (CDC)?
+-> Change Data Capture (CDC) adalah teknik yang digunakan untuk mendeteksi dan merekam perubahan yang terjadi pada data dalam basis data atau sistem penyimpanan lainnya. CDC memungkinkan sistem untuk menangkap perubahan data secara real-time atau hampir real-time, sehingga perubahan tersebut dapat direplikasi atau diproses lebih lanjut di sistem lain, seperti data warehouse atau sistem analitik.
+
+14. Dalam industri, apakah sumber utama Producer Kafka itu Websockets atau API sejenis?
+-> Dalam industri, sumber utama Producer Kafka bisa bervariasi tergantung pada kebutuhan aplikasi. Websockets dan API sejenis memang sering digunakan sebagai sumber data untuk Kafka, terutama dalam aplikasi real-time yang memerlukan komunikasi dua arah. Namun, Kafka juga dapat menerima data dari berbagai sumber lain seperti sistem log, basis data, sensor IoT, dan aplikasi lainnya. Jadi, tidak ada satu sumber utama yang dominan; semuanya tergantung pada arsitektur dan kebutuhan spesifik dari sistem yang dibangun.

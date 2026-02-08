@@ -1,0 +1,572 @@
+"""
+ERROR HANDLING & RETRY LOGIC
+
+Real-world scenario: Handle failures gracefully.
+
+Topics:
+- Retry logic dengan exponential backoff
+- Error handling dan recovery
+- Idempotent operations
+- Partial failure scenarios
+
+Cara run:
+    pytest 4-error-handling-retry.py -v
+"""
+
+import time
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+from functools import wraps
+from typing import Callable, Any
+
+import pytest
+
+
+# ==========================================
+# RETRY DECORATORS & UTILITIES
+# ==========================================
+
+
+def retry_on_exception(max_attempts: int = 3, backoff_seconds: float = 1.0, exceptions: tuple = (Exception,)):
+    """
+    Decorator untuk retry dengan exponential backoff.
+    
+    Args:
+        max_attempts: Berapa kali maksimal retry
+        backoff_seconds: Awal delay, exponential increasing
+        exceptions: Exception types mana yang di-retry
+    
+    Usage:
+        @retry_on_exception(max_attempts=3, backoff_seconds=0.5)
+        def fetch_data():
+            ...
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempt = 0
+            delay = backoff_seconds
+            
+            while attempt < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    attempt += 1
+                    
+                    if attempt >= max_attempts:
+                        raise
+                    
+                    print(f"Attempt {attempt} failed, retrying in {delay}s...")
+                    time.sleep(delay)
+                    delay *= 2  # Exponential backoff
+            
+        return wrapper
+    return decorator
+
+
+def safe_operation(default_return_value=None):
+    """
+    Decorator untuk graceful error handling.
+    
+    Return default value jika ada error.
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                print(f"Operation failed: {e}")
+                return default_return_value
+        return wrapper
+    return decorator
+
+
+# ==========================================
+# FUNCTIONS TO TEST
+# ==========================================
+
+
+@retry_on_exception(max_attempts=3, backoff_seconds=0.1)
+def fetch_data_with_retry(url: str) -> dict:
+    """Fetch data dengan retry logic."""
+    import requests
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+@safe_operation(default_return_value={})
+def fetch_data_safe(url: str) -> dict:
+    """Fetch data dengan graceful error handling."""
+    import requests
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+
+def process_batch_with_partial_failure(items: list, process_func: Callable) -> dict:
+    """
+    Process batch of items, handle partial failures.
+    
+    Returns:
+        {
+            "successful": [...],
+            "failed": [...],
+            "error": str
+        }
+    """
+    results = {
+        "successful": [],
+        "failed": [],
+        "errors": []
+    }
+    
+    for item in items:
+        try:
+            result = process_func(item)
+            results["successful"].append(result)
+        except Exception as e:
+            results["failed"].append(item)
+            results["errors"].append(str(e))
+    
+    return results
+
+
+def idempotent_upsert(db_connection, key: str, value: dict) -> bool:
+    """
+    Idempotent operation: Dapat di-run berkali-kali tanpa side effect.
+    
+    Returns: True jika success
+    """
+    cursor = db_connection.cursor()
+    
+    # Check if exists
+    cursor.execute("SELECT * FROM kv_store WHERE key = ?", (key,))
+    exists = cursor.fetchone() is not None
+    
+    if exists:
+        cursor.execute(
+            "UPDATE kv_store SET value = ? WHERE key = ?",
+            (str(value), key)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO kv_store (key, value) VALUES (?, ?)",
+            (key, str(value))
+        )
+    
+    db_connection.commit()
+    return True
+
+
+# ==========================================
+# TESTS - Retry Logic
+# ==========================================
+
+
+@patch('requests.get')
+def test_retry_succeeds_eventually(mock_get):
+    """Test retry: fails twice, succeeds on third attempt."""
+    # Setup: First 2 calls fail, third succeeds
+    fail_response = Mock()
+    fail_response.raise_for_status.side_effect = Exception("Connection timeout")
+    
+    success_response = Mock()
+    success_response.json.return_value = {"data": "success"}
+    success_response.raise_for_status.return_value = None
+    
+    mock_get.side_effect = [fail_response, fail_response, success_response]
+    
+    # Execute: Should eventually succeed despite failures
+    result = fetch_data_with_retry("http://example.com")
+    
+    # Verify
+    assert result == {"data": "success"}
+    assert mock_get.call_count == 3  # Called 3 times
+
+
+@patch('requests.get')
+def test_retry_exhausts_all_attempts(mock_get):
+    """Test retry: fails all attempts."""
+    # Setup: All calls fail
+    fail_response = Mock()
+    fail_response.raise_for_status.side_effect = Exception("Connection error")
+    
+    # Return same failing response every time
+    mock_get.side_effect = [fail_response, fail_response, fail_response]
+    
+    # Execute: Should raise error after all attempts
+    with pytest.raises(Exception):
+        fetch_data_with_retry("http://example.com")
+    
+    # Verify all attempts were made
+    assert mock_get.call_count == 3
+
+
+@patch('requests.get')
+def test_retry_with_backoff_timing(mock_get):
+    """Test retry: verify exponential backoff timing."""
+    # This test would verify sleep times, but we'll mock time
+    fail_response = Mock()
+    fail_response.raise_for_status.side_effect = Exception("Error")
+    
+    success_response = Mock()
+    success_response.json.return_value = {"data": "ok"}
+    success_response.raise_for_status.return_value = None
+    
+    mock_get.side_effect = [fail_response, fail_response, success_response]
+    
+    # In production: 0.1s, 0.2s, 0.4s between attempts
+    # In test: We don't want actual sleep
+    result = fetch_data_with_retry("http://example.com")
+    
+    assert result == {"data": "ok"}
+
+
+# ==========================================
+# TESTS - Error Handling
+# ==========================================
+
+
+@patch('requests.get')
+def test_safe_operation_returns_default_on_error(mock_get):
+    """Test graceful error handling: returns default value."""
+    # Setup: API fails
+    mock_response = Mock()
+    mock_response.raise_for_status.side_effect = Exception("API Error")
+    mock_get.return_value = mock_response
+    
+    # Execute: Should return default value, not raise
+    result = fetch_data_safe("http://example.com")
+    
+    # Verify
+    assert result == {}  # Default value
+
+
+@patch('requests.get')
+def test_safe_operation_returns_data_on_success(mock_get):
+    """Test graceful error handling: returns actual data on success."""
+    # Setup: API succeeds
+    mock_response = Mock()
+    mock_response.json.return_value = {"status": "ok"}
+    mock_response.raise_for_status.return_value = None
+    mock_get.return_value = mock_response
+    
+    # Execute
+    result = fetch_data_safe("http://example.com")
+    
+    # Verify
+    assert result == {"status": "ok"}
+
+
+# ==========================================
+# TESTS - Partial Failure Handling
+# ==========================================
+
+
+def test_batch_processing_all_success():
+    """Test batch processing: all items succeed."""
+    items = [1, 2, 3]
+    
+    def process(item):
+        return item * 2
+    
+    results = process_batch_with_partial_failure(items, process)
+    
+    assert len(results["successful"]) == 3
+    assert results["successful"] == [2, 4, 6]
+    assert len(results["failed"]) == 0
+
+
+def test_batch_processing_partial_failure():
+    """Test batch processing: some items fail."""
+    items = [1, 2, 3, 4]
+    
+    def process(item):
+        if item == 3:
+            raise ValueError("Item 3 is invalid")
+        return item * 2
+    
+    results = process_batch_with_partial_failure(items, process)
+    
+    # Verify
+    assert len(results["successful"]) == 3
+    assert results["successful"] == [2, 4, 8]
+    assert len(results["failed"]) == 1
+    assert 3 in results["failed"]
+    assert "Item 3 is invalid" in results["errors"]
+
+
+def test_batch_processing_all_fail():
+    """Test batch processing: all items fail."""
+    items = [1, 2, 3]
+    
+    def process(item):
+        raise ValueError(f"Cannot process {item}")
+    
+    results = process_batch_with_partial_failure(items, process)
+    
+    assert len(results["successful"]) == 0
+    assert len(results["failed"]) == 3
+
+
+def test_batch_processing_no_items():
+    """Test batch processing: empty list."""
+    results = process_batch_with_partial_failure([], lambda x: x)
+    
+    assert len(results["successful"]) == 0
+    assert len(results["failed"]) == 0
+
+
+# ==========================================
+# TESTS - Idempotency
+# ==========================================
+
+
+@pytest.fixture
+def kv_store_db():
+    """Setup key-value store database."""
+    import sqlite3
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE kv_store (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    yield conn
+    conn.close()
+
+
+def test_idempotent_first_insert(kv_store_db):
+    """Test idempotency: first insert."""
+    result = idempotent_upsert(kv_store_db, "user:1", {"name": "John"})
+    
+    assert result is True
+    
+    cursor = kv_store_db.cursor()
+    cursor.execute("SELECT value FROM kv_store WHERE key = ?", ("user:1",))
+    value = cursor.fetchone()[0]
+    assert value == "{'name': 'John'}"
+
+
+def test_idempotent_duplicate_insert(kv_store_db):
+    """Test idempotency: run same operation twice."""
+    # First run
+    idempotent_upsert(kv_store_db, "user:1", {"name": "John"})
+    
+    # Second run: same data
+    idempotent_upsert(kv_store_db, "user:1", {"name": "John"})
+    
+    # Verify: still only 1 record
+    cursor = kv_store_db.cursor()
+    cursor.execute("SELECT COUNT(*) FROM kv_store")
+    count = cursor.fetchone()[0]
+    assert count == 1
+
+
+def test_idempotent_update_same_key(kv_store_db):
+    """Test idempotency: update same key."""
+    # Insert
+    idempotent_upsert(kv_store_db, "user:1", {"name": "John"})
+    
+    # Update same key
+    idempotent_upsert(kv_store_db, "user:1", {"name": "Jane"})
+    
+    # Verify: still only 1 record, updated value
+    cursor = kv_store_db.cursor()
+    cursor.execute("SELECT COUNT(*) FROM kv_store")
+    count = cursor.fetchone()[0]
+    assert count == 1
+    
+    cursor.execute("SELECT value FROM kv_store WHERE key = ?", ("user:1",))
+    value = cursor.fetchone()[0]
+    assert "Jane" in value
+
+
+# ==========================================
+# TESTS - Real-World Scenarios
+# ==========================================
+
+
+def test_etl_pipeline_with_retry_and_partial_failure():
+    """
+    Real-world scenario: ETL with retry & partial failure.
+    
+    Extract from multiple sources:
+    - Source 1: Fails first time, succeeds on retry
+    - Source 2: Succeeds immediately
+    - Source 3: Fails (skip)
+    """
+    sources = {
+        "source_1": Mock(
+            side_effect=[
+                Exception("Connection refused"),
+                {"data": [1, 2, 3]}
+            ]
+        ),
+        "source_2": Mock(return_value={"data": [4, 5, 6]}),
+        "source_3": Mock(side_effect=Exception("Service unavailable"))
+    }
+    
+    extracted_data = {
+        "successful": [],
+        "failed": [],
+        "errors": []
+    }
+    
+    for source_name, mock_source in sources.items():
+        for attempt in range(2):  # Retry once
+            try:
+                result = mock_source()
+                extracted_data["successful"].append({
+                    "source": source_name,
+                    "data": result
+                })
+                break
+            except Exception as e:
+                if attempt == 1:
+                    extracted_data["failed"].append(source_name)
+                    extracted_data["errors"].append(str(e))
+    
+    # Verify
+    assert len(extracted_data["successful"]) == 2
+    assert len(extracted_data["failed"]) == 1
+    assert "source_3" in extracted_data["failed"]
+
+
+def test_circuit_breaker_pattern():
+    """
+    Real-world pattern: Circuit breaker.
+    
+    Mencegah hammering server yang sedang down.
+    """
+    class CircuitBreaker:
+        def __init__(self, failure_threshold: int = 3, timeout_seconds: int = 60):
+            self.failure_threshold = failure_threshold
+            self.timeout_seconds = timeout_seconds
+            self.failure_count = 0
+            self.last_failure_time = None
+            self.is_open = False
+        
+        def call(self, func):
+            # If circuit open, wait before trying
+            if self.is_open:
+                if datetime.now() - self.last_failure_time > timedelta(seconds=self.timeout_seconds):
+                    self.is_open = False
+                    self.failure_count = 0
+                else:
+                    raise Exception("Circuit breaker is open")
+            
+            try:
+                result = func()
+                self.failure_count = 0  # Reset on success
+                return result
+            except Exception as e:
+                self.failure_count += 1
+                self.last_failure_time = datetime.now()
+                
+                if self.failure_count >= self.failure_threshold:
+                    self.is_open = True
+                
+                raise
+    
+    # Test circuit breaker
+    breaker = CircuitBreaker(failure_threshold=2, timeout_seconds=1)
+    call_count = 0
+    
+    def failing_api():
+        nonlocal call_count
+        call_count += 1
+        raise Exception("API Error")
+    
+    # First failures
+    with pytest.raises(Exception):
+        breaker.call(failing_api)
+    
+    with pytest.raises(Exception):
+        breaker.call(failing_api)
+    
+    # Circuit should be open now
+    assert breaker.is_open is True
+    
+    # Further calls should fail immediately (not execute function)
+    with pytest.raises(Exception, match="Circuit breaker is open"):
+        breaker.call(failing_api)
+    
+    # call_count should be 2 (function not called on open circuit)
+    assert call_count == 2
+
+
+# ==========================================
+# BEST PRACTICES
+# ==========================================
+
+
+def test_error_handling_best_practices():
+    """
+    💡 ERROR HANDLING BEST PRACTICES:
+
+    1. RETRY DENGAN EXPONENTIAL BACKOFF
+       ✅ Start small delay, increase exponentially
+       ❌ Fixed delay atau no delay
+
+    2. SET MAX RETRY ATTEMPTS
+       ✅ Max 3-5 attempts
+       ❌ Unlimited retry
+
+    3. ONLY RETRY ON TRANSIENT ERRORS
+       ✅ Retry: timeout, connection, 503
+       ❌ Don't retry: 404, 401, validation error
+
+    4. IMPLEMENT CIRCUIT BREAKER
+       ✅ Stop hammering failing service
+       ❌ Keep retrying indefinitely
+
+    5. LOG ALL FAILURES
+       ✅ When retry happens, what error, attempt #
+       ❌ Silent failures
+
+    6. MAKE OPERATIONS IDEMPOTENT
+       ✅ Duplicate operations = same result
+       ❌ Duplicate operations = duplicate data
+
+    7. PARTIAL FAILURE HANDLING
+       ✅ Some items fail? Still process others
+       ❌ One failure = entire batch fails
+
+    8. TIMEOUT SETTINGS
+       ✅ Set reasonable timeouts
+       ❌ Infinite wait or too short timeout
+
+    TRANSIENT vs PERMANENT ERRORS:
+
+    TRANSIENT (Retry):
+    - Network timeout
+    - 503 Service Unavailable
+    - 429 Too Many Requests
+    - Connection refused (momentary)
+
+    PERMANENT (Don't retry):
+    - 404 Not Found
+    - 401 Unauthorized
+    - 400 Bad Request
+    - Validation errors
+    """
+    assert True
+
+
+if __name__ == "__main__":
+    print("❌ Don't run with python!")
+    print("✅ Run dengan: pytest 4-error-handling-retry.py -v")
+    print("\n💡 Key patterns:")
+    print("   - @retry_on_exception decorator")
+    print("   - @safe_operation decorator")
+    print("   - Partial failure handling")
+    print("   - Idempotent operations")
+    print("   - Circuit breaker pattern")

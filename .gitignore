@@ -1,0 +1,107 @@
+# Python Virtual Environments
+.venv/
+venv/
+*_env/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.env
+!.env.example
+
+# API Keys & Service Accounts
+keys/
+*.key
+*.json.key
+sa_key.json
+*credentials*.json
+!pyproject.toml
+!poetry.lock
+!package.json
+
+# Data Files (Large)
+*.csv
+*.parquet
+*.avro
+*.pkl
+*.pickle
+data/
+raw_data/
+output/
+processed/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+log/
+
+# Airflow
+airflow.db
+airflow.cfg
+webserver_config.py
+standalone_admin_password.txt
+airflow-webserver.pid
+
+# dbt
+target/
+dbt_packages/
+.user.yml
+logs/dbt.log
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Docker
+docker-compose.override.yml
+*.env.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Spark
+metastore_db/
+derby.log
+spark-warehouse/
+*.class
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Kafka
+/tmp/
+zookeeper/
+kafka-logs/
+
+# Build & Distribution
+dist/
+build/
+*.egg-info/
+*.egg

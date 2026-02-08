@@ -1,0 +1,477 @@
+"""
+MOCKING BASICS - API, Database, Files
+
+Topics:
+- Mock API calls dengan unittest.mock
+- Setup test database (in-memory SQLite)
+- Mock file operations
+- Using pytest fixtures untuk setup/teardown
+
+Cara run:
+    pytest 2-mocking-basics.py -v
+"""
+
+import json
+import sqlite3
+from datetime import datetime
+from unittest.mock import Mock, patch, MagicMock
+from io import StringIO
+
+import pandas as pd
+import pytest
+
+
+# ==========================================
+# FUNGSI YANG MAU DI-TEST (Real code)
+# ==========================================
+
+
+def fetch_user_data_from_api(user_id: int) -> dict:
+    """
+    Fetch user data dari external API.
+    
+    Note: Ini akan di-mock dalam tests.
+    """
+    import requests
+    response = requests.get(f"https://api.example.com/users/{user_id}")
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_crypto_prices(symbols: list) -> dict:
+    """Fetch crypto prices dari API."""
+    import requests
+    
+    prices = {}
+    for symbol in symbols:
+        resp = requests.get(f"https://api.coingecko.com/data/{symbol}")
+        resp.raise_for_status()
+        prices[symbol] = resp.json()["price"]
+    
+    return prices
+
+
+def load_users_to_database(db_connection, users: list) -> int:
+    """Load users ke database. Return count of inserted records."""
+    cursor = db_connection.cursor()
+    inserted = 0
+    
+    for user in users:
+        cursor.execute(
+            "INSERT INTO users (user_id, name, email) VALUES (?, ?, ?)",
+            (user["id"], user["name"], user["email"])
+        )
+        inserted += 1
+    
+    db_connection.commit()
+    return inserted
+
+
+def read_csv_file(filepath: str) -> pd.DataFrame:
+    """Read CSV file."""
+    return pd.read_csv(filepath)
+
+
+# ==========================================
+# FIXTURES - Setup/Teardown untuk tests
+# ==========================================
+
+
+@pytest.fixture
+def test_db():
+    """
+    Fixture: In-memory SQLite database.
+    
+    Benefit: Fast, isolated, auto-cleanup setelah test.
+    """
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
+    
+    # Setup schema
+    cursor.execute('''
+        CREATE TABLE users (
+            user_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    
+    yield conn  # Test pakai database ini
+    
+    # Cleanup (automatic, tapi bisa explicit)
+    conn.close()
+
+
+@pytest.fixture
+def sample_user_data():
+    """Fixture: Sample user data."""
+    return [
+        {"id": 1, "name": "John Doe", "email": "john@example.com"},
+        {"id": 2, "name": "Alice Smith", "email": "alice@example.com"},
+        {"id": 3, "name": "Bob Johnson", "email": "bob@example.com"},
+    ]
+
+
+@pytest.fixture
+def mock_api_response():
+    """Fixture: Typical API response."""
+    return {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "created_at": "2024-01-01T00:00:00Z"
+    }
+
+
+# ==========================================
+# TESTS - Mocking API Calls
+# ==========================================
+
+
+@patch('requests.get')
+def test_fetch_user_success(mock_get, mock_api_response):
+    """Test successful API call."""
+    # Setup mock
+    mock_response = Mock()
+    mock_response.json.return_value = mock_api_response
+    mock_response.raise_for_status.return_value = None
+    mock_get.return_value = mock_response
+    
+    # Call function
+    result = fetch_user_data_from_api(1)
+    
+    # Verify
+    assert result["id"] == 1
+    assert result["name"] == "John Doe"
+    
+    # Verify mock was called correctly
+    mock_get.assert_called_once_with("https://api.example.com/users/1")
+
+
+@patch('requests.get')
+def test_fetch_user_api_error(mock_get):
+    """Test API error handling."""
+    # Setup mock to raise error
+    mock_response = Mock()
+    mock_response.raise_for_status.side_effect = Exception("API Error")
+    mock_get.return_value = mock_response
+    
+    # Verify error is raised
+    with pytest.raises(Exception):
+        fetch_user_data_from_api(1)
+
+
+@patch('requests.get')
+def test_fetch_crypto_prices_multiple_calls(mock_get):
+    """Test API dengan multiple calls (parametrized responses)."""
+    # Mock different responses untuk different calls
+    responses = [
+        Mock(json=lambda: {"price": 50000}, raise_for_status=lambda: None),
+        Mock(json=lambda: {"price": 3000}, raise_for_status=lambda: None),
+        Mock(json=lambda: {"price": 2500}, raise_for_status=lambda: None),
+    ]
+    mock_get.side_effect = responses
+    
+    # Call function
+    prices = fetch_crypto_prices(["BTC", "ETH", "SOL"])
+    
+    # Verify
+    assert prices["BTC"] == 50000
+    assert prices["ETH"] == 3000
+    assert prices["SOL"] == 2500
+    
+    # Verify correct number of API calls
+    assert mock_get.call_count == 3
+
+
+@patch('requests.get')
+def test_fetch_crypto_with_retry_simulation(mock_get):
+    """
+    Test dengan retry logic.
+    
+    Scenario: API fails first time, succeeds second time.
+    """
+    fail_response = Mock()
+    fail_response.raise_for_status.side_effect = Exception("Connection timeout")
+    
+    success_response = Mock()
+    success_response.json.return_value = {"price": 50000}
+    success_response.raise_for_status.return_value = None
+    
+    # First call fails, second succeeds
+    mock_get.side_effect = [fail_response, success_response]
+    
+    # Simulate retry logic
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            resp = mock_get(f"https://api.coingecko.com/data/BTC")
+            resp.raise_for_status()
+            result = resp.json()
+            break
+        except Exception:
+            if attempt == max_retries - 1:
+                raise
+    
+    assert result["price"] == 50000
+
+
+# ==========================================
+# TESTS - Database Operations
+# ==========================================
+
+
+def test_load_users_to_database(test_db, sample_user_data):
+    """Test loading users ke database."""
+    # Load users
+    count = load_users_to_database(test_db, sample_user_data)
+    
+    # Verify count
+    assert count == 3
+    
+    # Verify data di database
+    cursor = test_db.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    db_count = cursor.fetchone()[0]
+    assert db_count == 3
+    
+    # Verify specific data
+    cursor.execute("SELECT name FROM users WHERE user_id = 1")
+    name = cursor.fetchone()[0]
+    assert name == "John Doe"
+
+
+def test_load_users_with_duplicate_handling(test_db, sample_user_data):
+    """Test handling of duplicate IDs (should fail unique constraint)."""
+    # Load first time
+    load_users_to_database(test_db, sample_user_data)
+    
+    # Try load same data again
+    with pytest.raises(sqlite3.IntegrityError):
+        load_users_to_database(test_db, sample_user_data)
+
+
+def test_query_after_load(test_db, sample_user_data):
+    """Test querying data setelah load."""
+    load_users_to_database(test_db, sample_user_data)
+    
+    # Query specific user
+    cursor = test_db.cursor()
+    cursor.execute("SELECT * FROM users WHERE name = ?", ("Alice Smith",))
+    row = cursor.fetchone()
+    
+    assert row[0] == 2  # user_id
+    assert row[1] == "Alice Smith"  # name
+    assert row[2] == "alice@example.com"  # email
+
+
+# ==========================================
+# TESTS - File Operations
+# ==========================================
+
+
+@pytest.fixture
+def sample_csv_file(tmp_path):
+    """Fixture: Create sample CSV file di temp directory."""
+    csv_content = """user_id,name,email
+1,John Doe,john@example.com
+2,Alice Smith,alice@example.com
+3,Bob Johnson,bob@example.com
+"""
+    filepath = tmp_path / "users.csv"
+    filepath.write_text(csv_content)
+    return filepath
+
+
+def test_read_csv_file(sample_csv_file):
+    """Test reading CSV file."""
+    df = read_csv_file(str(sample_csv_file))
+    
+    assert len(df) == 3
+    assert list(df.columns) == ["user_id", "name", "email"]
+    assert df.iloc[0]["name"] == "John Doe"
+
+
+def test_mock_file_with_stringio():
+    """
+    Test file operations tanpa actual file.
+    
+    Menggunakan StringIO untuk mock file content.
+    """
+    # Mock file content
+    csv_content = "user_id,name,email\n1,John,john@example.com\n"
+    
+    with patch("pandas.read_csv") as mock_read:
+        mock_read.return_value = pd.DataFrame({
+            "user_id": [1],
+            "name": ["John"],
+            "email": ["john@example.com"]
+        })
+        
+        # Read file
+        df = read_csv_file("fake_path.csv")
+        
+        # Verify
+        assert len(df) == 1
+
+
+# ==========================================
+# COMPOSITE TEST - API + Database
+# ==========================================
+
+
+def test_extract_and_load_flow(test_db, mock_api_response):
+    """
+    Integration test: Extract dari API, load ke database.
+    
+    Ini test flow yang lebih realistic!
+    """
+    # Step 1: Mock API response
+    with patch('requests.get') as mock_get:
+        mock_response = Mock()
+        mock_response.json.return_value = mock_api_response
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        # Step 2: Extract
+        user_data = fetch_user_data_from_api(1)
+        
+        # Step 3: Transform (simple example)
+        user_to_load = {
+            "id": user_data["id"],
+            "name": user_data["name"],
+            "email": user_data["email"]
+        }
+        
+        # Step 4: Load
+        count = load_users_to_database(test_db, [user_to_load])
+    
+    # Step 5: Verify end-to-end
+    assert count == 1
+    
+    cursor = test_db.cursor()
+    cursor.execute("SELECT * FROM users WHERE user_id = 1")
+    row = cursor.fetchone()
+    assert row[1] == "John Doe"
+
+
+def test_api_to_csv_to_database():
+    """Test pipeline: API → CSV → Database."""
+    # Setup
+    with patch('requests.get') as mock_get, \
+         patch('builtins.open', create=True) as mock_file:
+        
+        # Mock API
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {"id": 1, "name": "John", "email": "john@example.com"},
+            {"id": 2, "name": "Alice", "email": "alice@example.com"},
+        ]
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        # Mock file operations
+        csv_content = "id,name,email\n1,John,john@example.com\n2,Alice,alice@example.com\n"
+        mock_file.return_value.__enter__.return_value = StringIO(csv_content)
+        
+        # Test: Read API
+        users = mock_response.json()
+        
+        # Verify API data
+        assert len(users) == 2
+        assert users[0]["name"] == "John"
+
+
+# ==========================================
+# CONTEXT MANAGER FOR MOCKING
+# ==========================================
+
+
+@pytest.fixture
+def mock_external_services():
+    """
+    Fixture yang setup multiple mocks sekaligus.
+    
+    Useful ketika ada banyak external dependencies.
+    """
+    with patch('requests.get') as mock_get:
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "ok"}
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        yield {
+            'api': mock_get,
+            'response': mock_response
+        }
+
+
+def test_with_multiple_mocks(mock_external_services):
+    """Test menggunakan multiple mocked services."""
+    mock_api = mock_external_services['api']
+    
+    # Simulate API call
+    result = fetch_user_data_from_api(1)
+    
+    # Verify
+    assert mock_api.called
+
+
+# ==========================================
+# TIPS & BEST PRACTICES
+# ==========================================
+
+
+def test_mocking_best_practices():
+    """
+    💡 MOCKING BEST PRACTICES:
+
+    1. PATCH DI TEMPAT IMPORT, BUKAN ORIGINAL
+       ❌ @patch('os.path.exists')  # Wrong!
+       ✅ @patch('mymodule.os.path.exists')  # Correct!
+
+    2. MOCK ONLY EXTERNAL DEPENDENCIES
+       ✅ Mock API, Database, File system
+       ❌ Don't mock business logic
+
+    3. USE FIXTURES UNTUK REUSABLE MOCKS
+       ✅ @pytest.fixture def mock_api()
+       ❌ Repeat mocking code in every test
+
+    4. VERIFY MOCKS WERE CALLED CORRECTLY
+       ✅ mock.assert_called_once_with(...)
+       ✅ mock.assert_called()
+       ✅ assert mock.call_count == 3
+
+    5. TEST BOTH SUCCESS & FAILURE PATHS
+       ✅ Test successful API response
+       ✅ Test API error/timeout
+       ✅ Test invalid data
+
+    6. USE IN-MEMORY DATABASE FOR TESTING
+       ✅ sqlite3.connect(':memory:')  # Fast!
+       ❌ Don't use real database
+
+    7. CLEANUP AFTER TESTS
+       ✅ Fixtures dengan yield handle cleanup
+       ✅ temp_path fixture auto-cleanup files
+
+    COMMON MISTAKES:
+    ❌ Mocking too much (hiding real bugs)
+    ❌ Mocking too little (missing edge cases)
+    ❌ Not verifying mock was called
+    ❌ Tests dependent on execution order
+    ❌ Leaving test data in production database
+    """
+    assert True
+
+
+if __name__ == "__main__":
+    print("❌ Don't run with python!")
+    print("✅ Run dengan: pytest 2-mocking-basics.py -v")
+    print("\n💡 Key concepts:")
+    print("   - @patch decorator untuk mock")
+    print("   - Mock.return_value untuk set return values")
+    print("   - Mock.assert_called_once_with() untuk verify")
+    print("   - pytest fixtures untuk setup/teardown")

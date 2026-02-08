@@ -1,0 +1,307 @@
+[
+    {
+        "currency_code": "USD",
+        "currency_name": "United States Dollar",
+        "region": "North America"
+    },
+    {
+        "currency_code": "EUR",
+        "currency_name": "Euro",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "JPY",
+        "currency_name": "Japanese Yen",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "GBP",
+        "currency_name": "Pound Sterling",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "AUD",
+        "currency_name": "Australian Dollar",
+        "region": "Oceania"
+    },
+    {
+        "currency_code": "CAD",
+        "currency_name": "Canadian Dollar",
+        "region": "North America"
+    },
+    {
+        "currency_code": "CHF",
+        "currency_name": "Swiss Franc",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "CNY",
+        "currency_name": "Chinese Yuan",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "HKD",
+        "currency_name": "Hong Kong Dollar",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "NZD",
+        "currency_name": "New Zealand Dollar",
+        "region": "Oceania"
+    },
+    {
+        "currency_code": "SEK",
+        "currency_name": "Swedish Krona",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "KRW",
+        "currency_name": "South Korean Won",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "SGD",
+        "currency_name": "Singapore Dollar",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "NOK",
+        "currency_name": "Norwegian Krone",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "MXN",
+        "currency_name": "Mexican Peso",
+        "region": "North America"
+    },
+    {
+        "currency_code": "INR",
+        "currency_name": "Indian Rupee",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "RUB",
+        "currency_name": "Russian Ruble",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "ZAR",
+        "currency_name": "South African Rand",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "TRY",
+        "currency_name": "Turkish Lira",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "BRL",
+        "currency_name": "Brazilian Real",
+        "region": "South America"
+    },
+    {
+        "currency_code": "TWD",
+        "currency_name": "New Taiwan Dollar",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "DKK",
+        "currency_name": "Danish Krone",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "PLN",
+        "currency_name": "Polish Zloty",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "THB",
+        "currency_name": "Thai Baht",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "IDR",
+        "currency_name": "Indonesian Rupiah",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "MYR",
+        "currency_name": "Malaysian Ringgit",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "PHP",
+        "currency_name": "Philippine Peso",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "VND",
+        "currency_name": "Vietnamese Dong",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "SAR",
+        "currency_name": "Saudi Riyal",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "AED",
+        "currency_name": "UAE Dirham",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "EGP",
+        "currency_name": "Egyptian Pound",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "NGN",
+        "currency_name": "Nigerian Naira",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "KES",
+        "currency_name": "Kenyan Shilling",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "GHS",
+        "currency_name": "Ghanaian Cedi",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "UAH",
+        "currency_name": "Ukrainian Hryvnia",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "CLP",
+        "currency_name": "Chilean Peso",
+        "region": "South America"
+    },
+    {
+        "currency_code": "COP",
+        "currency_name": "Colombian Peso",
+        "region": "South America"
+    },
+    {
+        "currency_code": "PEN",
+        "currency_name": "Peruvian Sol",
+        "region": "South America"
+    },
+    {
+        "currency_code": "ARS",
+        "currency_name": "Argentine Peso",
+        "region": "South America"
+    },
+    {
+        "currency_code": "PKR",
+        "currency_name": "Pakistani Rupee",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "BDT",
+        "currency_name": "Bangladeshi Taka",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "LKR",
+        "currency_name": "Sri Lankan Rupee",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "MAD",
+        "currency_name": "Moroccan Dirham",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "TND",
+        "currency_name": "Tunisian Dinar",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "DZD",
+        "currency_name": "Algerian Dinar",
+        "region": "Africa"
+    },
+    {
+        "currency_code": "IQD",
+        "currency_name": "Iraqi Dinar",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "IRR",
+        "currency_name": "Iranian Rial",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "KWD",
+        "currency_name": "Kuwaiti Dinar",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "QAR",
+        "currency_name": "Qatari Riyal",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "OMR",
+        "currency_name": "Omani Rial",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "BHD",
+        "currency_name": "Bahraini Dinar",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "CZK",
+        "currency_name": "Czech Koruna",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "HUF",
+        "currency_name": "Hungarian Forint",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "RON",
+        "currency_name": "Romanian Leu",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "BGN",
+        "currency_name": "Bulgarian Lev",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "ISK",
+        "currency_name": "Icelandic Krona",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "HRK",
+        "currency_name": "Croatian Kuna",
+        "region": "Europe"
+    },
+    {
+        "currency_code": "SRD",
+        "currency_name": "Surinamese Dollar",
+        "region": "South America"
+    },
+    {
+        "currency_code": "JOD",
+        "currency_name": "Jordanian Dinar",
+        "region": "Middle East"
+    },
+    {
+        "currency_code": "AFN",
+        "currency_name": "Afghan Afghani",
+        "region": "Asia"
+    },
+    {
+        "currency_code": "MNT",
+        "currency_name": "Mongolian Tögrög",
+        "region": "Asia"
+    }
+]

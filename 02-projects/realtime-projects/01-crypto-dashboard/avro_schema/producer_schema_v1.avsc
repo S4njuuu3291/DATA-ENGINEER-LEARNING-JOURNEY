@@ -1,0 +1,11 @@
+{
+    "type": "record",
+    "name": "CryptoPrice",
+    "namespace": "com.example.crypto",
+    "fields": [
+        {"name": "symbol", "type": "string"},
+        {"name": "price", "type": "double"},
+        {"name": "event_time", "type": "long"},
+        {"name": "processed_time", "type": "long"}
+    ]
+}

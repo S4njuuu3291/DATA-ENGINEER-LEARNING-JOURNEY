@@ -1,0 +1,26 @@
+[project]
+name = "realtime-sales"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Sanz3291", email = "sanju329121@gmail.com"}
+]
+readme = "README.md"
+requires-python = "~3.12"
+# TAMBAHKAN BARIS DI BAWAH INI
+package-mode = false 
+
+dependencies = [
+    "pyspark==3.5.0",
+    "confluent-kafka>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0"
+]
+
+[tool.poetry]
+# Kalau kamu pakai struktur Poetry lama, tambahkan juga di sini
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

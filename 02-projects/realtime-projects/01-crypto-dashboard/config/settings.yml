@@ -1,0 +1,14 @@
+# konfig simbol koin yang dipakai
+kafka:
+    bootstrap_servers: localhost:9092
+    topic: crypto_prices
+
+schema_registry:
+  url: http://localhost:8081
+
+symbols:
+  - btcusdt
+  - solusdt
+  - ethusdt
+  - bnbusdt
+  - xrpusdt

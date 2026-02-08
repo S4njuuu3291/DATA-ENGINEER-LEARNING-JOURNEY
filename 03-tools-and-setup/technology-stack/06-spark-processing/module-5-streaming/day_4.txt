@@ -1,0 +1,16 @@
+Bertanya seputar State Aggregation dalam Spark Streaming?
+
+1. Definisi State dalam Spark Streaming?
+- State dalam Spark Streaming merujuk pada informasi yang disimpan dari batch data sebelumnya yang dapat digunakan untuk mempengaruhi pemrosesan batch data saat ini. State memungkinkan aplikasi streaming untuk mempertahankan konteks atau informasi historis yang diperlukan untuk analisis yang lebih kompleks, seperti menghitung total kumulatif, melacak sesi pengguna, atau mengelola jendela waktu.
+
+2. Apa itu State Aggregation?
+- State Aggregation adalah proses menggabungkan atau mengakumulasi data dari batch streaming sebelumnya untuk menghasilkan hasil yang lebih bermakna atau komprehensif. Ini melibatkan penyimpanan dan pembaruan state berdasarkan data yang masuk, memungkinkan analisis yang lebih mendalam dan pelacakan tren dari waktu ke waktu.
+
+3. Berarti kenapa transaksi ketika dibiarkan agak lama dan ke cancel, berkaitan dengan konsep State dan Watermark serta Session Window?
+- Ketika transaksi dibiarkan agak lama dan akhirnya dibatalkan, hal ini dapat berkaitan dengan konsep State, Watermark, dan Session Window dalam Spark Streaming. Watermark digunakan untuk mengelola data terlambat dengan menetapkan batas waktu di mana data dianggap valid. Jika transaksi tidak selesai dalam jangka waktu yang ditentukan oleh watermark, maka transaksi tersebut dapat dianggap kadaluarsa dan dibatalkan. Session Window memungkinkan pengelompokan data berdasarkan aktivitas pengguna dalam jangka waktu tertentu, sehingga jika tidak ada aktivitas yang terjadi dalam jangka waktu tersebut, sesi dapat dianggap selesai dan transaksi terkait dapat dibatalkan.
+
+4. Apakah state itu bersifat user sentris atau global?
+- State dalam Spark Streaming dapat bersifat user sentris atau global, tergantung pada bagaimana aplikasi diimplementasikan. State user sentris menyimpan informasi yang spesifik untuk setiap pengguna atau entitas, seperti sesi pengguna atau preferensi individu. Sedangkan state global menyimpan informasi yang berlaku untuk seluruh aplikasi atau sistem, seperti total kumulatif dari semua pengguna atau statistik agregat.
+
+6. Gimana mekanisme penghapusan data tertentu dalam State jika sudah tidak diperlukan?
+- Mekanisme penghapusan data dalam State dapat dilakukan melalui beberapa cara, seperti menggunakan timeout atau kebijakan retensi. Spark Streaming memungkinkan pengaturan waktu kedaluwarsa untuk state tertentu, sehingga data yang sudah tidak diperlukan dapat dihapus secara otomatis setelah jangka waktu tertentu. Selain itu, pengguna juga dapat secara eksplisit menghapus state yang tidak lagi relevan melalui kode aplikasi.

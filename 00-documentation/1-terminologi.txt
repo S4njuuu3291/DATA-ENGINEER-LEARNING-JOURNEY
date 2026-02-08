@@ -1,0 +1,34 @@
+Terminologi Data Engineer
+
+1. Apa itu Data Engineering?
+Data Engineering adalah disiplin ilmu yang berfokus pada perancangan, pembangunan, dan pemeliharaan sistem untuk mengumpulkan, menyimpan, memproses, dan mengelola data dalam skala besar. Data Engineer bertanggung jawab untuk membuat infrastruktur dan arsitektur data yang memungkinkan organisasi untuk mengakses, menganalisis, dan memanfaatkan data secara efisien.
+
+Tugas utama Data Engineering meliputi:
+- Membangun dan mengelola data pipeline
+- Mengintegrasikan data dari berbagai sumber
+- Memastikan kualitas dan konsistensi data
+- Mengoptimalkan performa sistem penyimpanan dan pemrosesan data
+- Membangun infrastruktur untuk mendukung analisis data dan machine learning
+
+2. Apa itu Data Modeling?
+Data Modeling adalah proses merancang struktur dan organisasi data untuk mendukung kebutuhan bisnis dan teknis suatu organisasi. Ini melibatkan pembuatan representasi visual dan logis dari bagaimana data disimpan, diakses, dan dikelola dalam sistem database.
+
+Aspek penting Data Modeling meliputi:
+- Mendefinisikan entitas, atribut, dan relasi antar data
+- Merancang skema database (conceptual, logical, dan physical model)
+- Menentukan tipe data, constraint, dan aturan validasi
+- Mengoptimalkan struktur data untuk performa query
+- Memastikan integritas dan konsistensi data
+- Menerapkan normalisasi atau denormalisasi sesuai kebutuhan
+
+3. Apa definisi Enterprise Architecture?
+Enterprise Architecture (EA) adalah kerangka kerja yang digunakan untuk merancang, merencanakan, dan mengelola struktur dan operasi teknologi informasi (TI) dalam suatu organisasi. EA bertujuan untuk menyelaraskan strategi bisnis dengan infrastruktur TI, sehingga mendukung tujuan bisnis secara efektif dan efisien.
+
+4. Apa itu Terraform dan apa yang bisa dilakukan dengan Terraform?
+Terraform adalah alat open-source yang digunakan untuk mengotomatisasi penyediaan dan pengelolaan infrastruktur TI melalui kode (Infrastructure as Code/IaC). Dengan Terraform, pengguna dapat mendefinisikan infrastruktur mereka dalam file konfigurasi yang dapat dibaca manusia, yang kemudian dapat digunakan untuk membuat, mengubah, dan mengelola sumber daya infrastruktur di berbagai penyedia layanan cloud.
+
+Fitur utama Terraform meliputi:
+- Mendukung berbagai penyedia layanan cloud seperti AWS, Azure, Google Cloud, dan lainnya.
+- Memungkinkan versi kontrol infrastruktur melalui kode.
+- Mengelola dependensi antar sumber daya infrastruktur. 
+
