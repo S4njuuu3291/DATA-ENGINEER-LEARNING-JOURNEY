@@ -48,8 +48,16 @@ Project lama atau broken yang disimpan untuk referensi
 
 ### 03-tools-and-setup/
 Tools, utilities, dan technology-based learning materials:
-- **technology-stack/** - Learning materials per teknologi (Python, Airflow, Cloud, dbt, Kafka, Spark)
-- **aws-data-engineering/** - Structured AWS learning path (3 phases)
+- **technology-stack/** - Learning materials per teknologi:
+  - **01-python-projects** - Python fundamentals & projects
+  - **02-airflow-orchestration** - Airflow orchestration
+  - **03-cloud-deployment** - Cloud deployment strategies
+  - **04-dbt-transformations** - dbt data transformations
+  - **05-kafka-streaming** - Kafka streaming
+  - **06-spark-processing** - Spark distributed processing
+  - **07-aws-data-engineering** - AWS services (S3, Glue, Athena) ⭐ NEW: Module 3 Glue Catalog
+  - **08-terraform** - Infrastructure as Code ⭐ NEW
+  - **09-scraping-playwright** - Web scraping with Playwright ⭐ NEW
 - **misc-repo/** - Repository tambahan
 
 ### config/
@@ -97,14 +105,24 @@ File-file konfigurasi project (pyproject.toml, dll)
 1. Mulai dari folder `00-documentation` untuk memahami terminologi
 2. Ikuti learning modules di `01-learning-modules` secara berurutan
 3. Praktik dengan projects di `02-projects`
-4. **NEW - AWS Learning:** Ikuti structured path di `03-tools-and-setup/aws-data-engineering/`
-   - Phase 1: Foundation (S3 + Athena)
-   - Phase 2: Serverless (Lambda + EventBridge)
-   - Phase 3: Integration (Data lake architecture)
-5. Gunakan tools di `03-tools-and-setup` untuk setup environment
+4. **AWS Learning Path:** Structured path di `03-tools-and-setup/technology-stack/07-aws-data-engineering/`
+   - Module 1: S3 & Athena (Foundation)
+   - Module 2: Lambda & EventBridge (Serverless)
+   - Module 3: Glue Catalog (Data Lake Architecture) ⭐ NEW
+5. **Infrastructure & Automation:** Terraform dan DevOps di `03-tools-and-setup/technology-stack/`
+6. Gunakan tools dan cheatsheets di `03-tools-and-setup` untuk referensi cepat
 
 ## 📝 Notes
 
 - Semua folder menggunakan prefix angka untuk urutan yang jelas
 - ETL projects dipisahkan dari realtime projects untuk kemudahan navigasi
 - Archived projects tetap disimpan untuk referensi historis
+
+## 🆕 Recent Updates
+
+**February 2026:**
+- ✨ **AWS Data Engineering - Module 3:** AWS Glue Catalog complete with cheatsheets, exercises & notebooks
+- ✨ **Terraform Module:** Infrastructure as Code learning path ditambahkan
+- ✨ **Web Scraping:** Playwright framework untuk modern web scraping
+- 🔧 **Dependencies:** Python packages updated (poetry.lock)
+- 📝 **Type Checking:** pyrightconfig.json configuration ditambahkan untuk type safety

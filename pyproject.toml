@@ -34,6 +34,7 @@ fastparquet = "^2025.12.0"
 
 [tool.poetry.group.dev.dependencies]
 # add lint/format tools here if needed
+boto3-stubs = {extras = ["essential", "iam"], version = "^1.42.48"}
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]

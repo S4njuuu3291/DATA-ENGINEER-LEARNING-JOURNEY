@@ -1,6 +1,6 @@
-# Module 1-2 Cheatsheets
+# Module 1-3 Cheatsheets
 
-Quick reference guides for AWS Foundation and Serverless automation services.
+Quick reference guides for AWS Foundation, Serverless automation, and Glue Catalog.
 
 ---
 
@@ -69,6 +69,18 @@ Quick reference guides for AWS Foundation and Serverless automation services.
 
 ---
 
+### 6. [Glue Catalog Cheatsheet](aws-glue-catalog-cheatsheet.md)
+**Topic:** AWS Glue Data Catalog  
+**Use for:**
+- Create databases/tables/partitions
+- Run and tune crawlers
+- Handle schema evolution
+- Troubleshoot crawler failures
+
+**When to use:** Working on Module 3 exercises (1-6), metadata management.
+
+---
+
 ## Quick Decision Guide
 
 **Need to:**
@@ -77,6 +89,7 @@ Quick reference guides for AWS Foundation and Serverless automation services.
 - ✅ **Secure network for data pipeline?** → [VPC Cheatsheet](aws-vpc-cheatsheet.md)
 - ✅ **Automate data processing?** → [Lambda Cheatsheet](aws-lambda-cheatsheet.md)
 - ✅ **Schedule or route events?** → [EventBridge Cheatsheet](aws-eventbridge-cheatsheet.md)
+- ✅ **Manage metadata & crawlers?** → [Glue Catalog Cheatsheet](aws-glue-catalog-cheatsheet.md)
 
 ---
 

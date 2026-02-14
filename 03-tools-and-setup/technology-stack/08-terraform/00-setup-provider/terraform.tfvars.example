@@ -1,0 +1,20 @@
+# Terraform Variables Example Template
+# =========================================
+# 
+# File ini adalah TEMPLATE untuk terraform.tfvars
+# 
+# CARA MENGGUNAKAN:
+# 1. Copy file ini: cp terraform.tfvars.example terraform.tfvars
+# 2. Edit terraform.tfvars dengan credentials AWS Anda yang sebenarnya
+# 3. terraform.tfvars sudah di-.gitignore, jadi tidak akan di-commit ke version control
+#
+# CATATAN KEAMANAN:
+# - JANGAN commit terraform.tfvars ke git
+# - File ini hanya berisi placeholder kosong
+# - Gunakan untuk testing lokal atau development saja
+#
+# =========================================
+
+aws_region     = "ap-southeast-1"
+aws_access_key = ""
+aws_secret_key = ""

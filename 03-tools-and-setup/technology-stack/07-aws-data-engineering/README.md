@@ -35,7 +35,7 @@
 ### **Module 2: Serverless Automation (AWS Lambda & EventBridge)**
 - **Duration:** 8 hours
 - **Level:** ⭐⭐⭐ Intermediate
-- **Status:** 🟢 In Progress
+- **Status:** ✅ Completed
 - **Requires:** Module 1 complete
 - **Topics:**
   - Serverless architecture, S3 triggers, EventBridge schedules
@@ -46,15 +46,17 @@
 
 ---
 
-### **Module 3: Cataloging (Glue Data Catalog & Crawler)**
-- **Duration:** 5 hours
+### **Module 3: Cataloging (Glue Data Catalog & Crawlers)**
+- **Duration:** 4 hours
 - **Level:** ⭐⭐⭐ Intermediate
-- **Status:** 🔵 Coming Soon
+- **Status:** ✅ Completed
 - **Requires:** Module 1-2 complete
 - **Topics:**
-  - Hive Metastore & Schema Evolution
-  - Crawler cost-optimization & Classification
-  - Partition Discovery
+  - Glue Data Catalog fundamentals & metadata objects
+  - Crawlers, classifiers, recrawl strategy
+  - Event-driven automation for catalog updates
+
+[📖 Start Module 3](./module-3-glue-catalog/README.md)
 
 ---
 
